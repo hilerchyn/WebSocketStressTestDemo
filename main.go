@@ -64,7 +64,13 @@ func connection(wg *sync.WaitGroup) {
 
 	c, _, err := websocket.DefaultDialer.Dial(u, nil)
 	if err != nil {
-		log.Fatal("dial:", err)
+		log.Println("dial:", err)
+
+		ticker.Stop()
+		c.Close()
+		wg.Done()
+		<-tickets
+		return
 	}
 	defer c.Close()
 
@@ -74,8 +80,12 @@ func connection(wg *sync.WaitGroup) {
 			_, message, err := c.ReadMessage()
 			if err != nil {
 				log.Println("read:", err)
+
+				ticker.Stop()
+				c.Close()
 				wg.Done()
-				break
+				<-tickets
+				return
 			}
 			//log.Printf("recv: %s", message)
 			if strings.Contains(string(message), "login_resp") {
